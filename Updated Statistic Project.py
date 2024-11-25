@@ -7,7 +7,7 @@ from scipy.stats import ttest_ind, chi2_contingency, f_oneway
 from sklearn.linear_model import LinearRegression
 import numpy as np
 
-# List of country codes (196)
+
 country_codes = [
     "ABW", "AFG", "AGO", "ALB", "ARE", "ARG", "ARM", "ATG", "AUS", "AUT",
     "AZE", "BDI", "BEL", "BEN", "BFA", "BGD", "BGR", "BHR", "BHS", "BIH",
@@ -51,11 +51,11 @@ if response.status_code == 200:
 else:
     print("Veri alınamadı: {response.status_code}")
 
-# Combine all data into a single DataFrame
+
 if all_data:
     combined_df = pd.concat(all_data, ignore_index=True)
 
-    # Plot for Turkey with standard deviation line
+
     plt.figure(figsize=(10, 6))
     turkey_data = combined_df[combined_df['Ülke'] == 'TUR']
     sns.lineplot(data=turkey_data, x='Yıl', y='TÜFE', color='blue', label='Türkiye TÜFE')
@@ -63,7 +63,7 @@ if all_data:
     plt.xlabel('Yıl')
     plt.ylabel('TÜFE')
 
-    # Calculate standard deviation of Turkey's CPI and plot it
+
     std_turkey_cpi = turkey_data['TÜFE'].std()
     plt.axhline(std_turkey_cpi, color='green', linestyle='--', label='Standart Sapma TÜFE')
 
@@ -71,7 +71,7 @@ if all_data:
     plt.xticks(rotation=45)
     plt.show()
 
-    # Plot for Other Countries (average CPI)
+
     plt.figure(figsize=(10, 6))
     other_countries = combined_df[combined_df['Ülke'] != 'TUR']
     aggregated_cpi = other_countries.groupby('Yıl')['TÜFE'].mean().reset_index()
@@ -82,33 +82,32 @@ if all_data:
     plt.xticks(rotation=45)
     plt.show()
 
-    # Plot for Median CPI of all countries, with Turkey in a different color
     plt.figure(figsize=(10, 6))
     median_cpi = combined_df.groupby('Ülke')['TÜFE'].median().reset_index()
 
-    # Define colors: set 'red' for Turkey and 'blue' for other countries
+
     colors = ['red' if country == 'TUR' else 'blue' for country in median_cpi['Ülke']]
 
-    # Plotting the bar plot with customized colors
+
     sns.barplot(data=median_cpi, x='Ülke', y='TÜFE', palette=colors)
     plt.title('Tüm Ülkelerin Medyan Tüketici Fiyat Endeksi')
     plt.xlabel('Ülke')
     plt.ylabel('Medyan TÜFE')
-    plt.xticks([], rotation=0)  # Hide x-tick labels to keep the plot cleaner
+    plt.xticks([], rotation=0)
     plt.show()
 
-    # Calculate the mean for Turkey's CPI specifically for the pie chart
+
     mean_turkey_cpi = turkey_data['TÜFE'].mean()
     average_world_cpi = other_countries['TÜFE'].mean()
 
-    # Average CPI Pie Chart
+
     plt.figure(figsize=(6, 6))
     pie_data = pd.Series([mean_turkey_cpi, average_world_cpi], index=['Türkiye', 'Diğer Ülkeler'])
     plt.pie(pie_data, labels=pie_data.index, autopct='%1.1f%%', startangle=140)
     plt.title('Ortalama Tüketici Fiyat Endeksi')
     plt.show()
 
-    # Mode CPI for each country in a bar plot with Turkey highlighted
+
     plt.figure(figsize=(12, 6))
     mode_cpi = combined_df.groupby('Ülke')['TÜFE'].apply(lambda x: mode(x) if len(x) > 0 else None).reset_index()
     colors = ['red' if x == 'TUR' else 'blue' for x in mode_cpi['Ülke']]
@@ -116,10 +115,9 @@ if all_data:
     plt.title('Her Ülke İçin Tüketici Fiyat Endeksinin (Mod)')
     plt.xlabel('Ülke')
     plt.ylabel('Mod TÜFE')
-    plt.xticks([], rotation=0)  # Hide x-tick labels
+    plt.xticks([], rotation=0) 
     plt.show()
 
-    # T-test function
     def perform_t_test(data):
         turkey_cpi = data[data['Ülke'] == 'TUR']['TÜFE']
         other_countries_cpi = data[data['Ülke'] != 'TUR']['TÜFE']
@@ -130,7 +128,7 @@ if all_data:
         else:
             print("Türkiye ile diğer ülkeler arasında anlamlı fark yok.")
 
-    # Chi-squared test function
+
     def perform_chi_squared_test(data):
         contingency_table = pd.crosstab(data['Yıl'], data['Ülke'] == 'TUR')
         chi2, p_value, dof, expected = chi2_contingency(contingency_table)
@@ -141,7 +139,7 @@ if all_data:
             print("Yıllar ile ülke gruplandırması arasında anlamlı ilişki yok.No significant association between years and country grouping.")
 
         
-    # Call the new functions to display test results
+
     perform_t_test(combined_df)
     perform_chi_squared_test(combined_df)
 
@@ -149,46 +147,46 @@ else:
     print("Görselleştirme için veri bulunmamaktadır.")
     
 
-# Regression analysis function for Turkey and other countries
 def regression_analysis(df, country='TUR'):
-    # Select data for Turkey or other countries
+
     if country == 'TUR':
         country_data = df[df['Ülke'] == 'TUR']
     else:
         country_data = df[df['Ülke'] != 'TUR'].groupby('Yıl')['TÜFE'].mean().reset_index()
 
-    # Prepare independent (X) and dependent (Y) variables
-    X = country_data[['Yıl']]  # Independent variable (Year)
-    Y = country_data['TÜFE']   # Dependent variable (CPI)
 
-    # Create and fit the linear regression model
+    X = country_data[['Yıl']]  
+    Y = country_data['TÜFE'] 
+
+
     model = LinearRegression()
     model.fit(X, Y)
 
-    # Predict the values
+
     country_data['Predicted'] = model.predict(X)
 
     return country_data, model.coef_[0], model.intercept_
 
-# Regression analysis for Turkey
+
 turkey_data, turkey_slope, turkey_intercept = regression_analysis(combined_df, country='TUR')
 
-# Plot for Turkey (Linear Regression)
+
 plt.figure(figsize=(10, 6))
 sns.regplot(x='Yıl', y='TÜFE', data=turkey_data, scatter_kws={'color': 'blue'}, line_kws={'color': 'red'})
-plt.title(f'Turkey CPI (TÜFE) Regression Line\nSlope: {turkey_slope:.2f}, Intercept: {turkey_intercept:.2f}')
-plt.xlabel('Year')
+plt.title(f'Türkiye TÜFE (Tüketici Fiyat Endeksi) Regresyon Çizgisi\nEğim: {turkey_slope:.2f}, Kesişim Noktası: {turkey_intercept:.2f}')
+plt.xlabel('Yıl')
 plt.ylabel('CPI (TÜFE)')
 plt.show()
 
-# Regression analysis for Other Countries (Average CPI)
+
 other_data, other_slope, other_intercept = regression_analysis(combined_df, country='Other')
 
-# Plot for Other Countries (Linear Regression)
+
 plt.figure(figsize=(10, 6))
 sns.regplot(x='Yıl', y='TÜFE', data=other_data, scatter_kws={'color': 'orange'}, line_kws={'color': 'green'})
-plt.title(f'Other Countries Average CPI (TÜFE) Regression Line\nSlope: {other_slope:.2f}, Intercept: {other_intercept:.2f}')
-plt.xlabel('Year')
-plt.ylabel('Average CPI (TÜFE)')
+plt.title(f'Diğer Ülkeler Ortalama TÜFE (Tüketici Fiyat Endeksi) Regresyon Çizgisi\nEğim: {other_slope:.2f}, Kesişim Noktası: {other_intercept:.2f}')
+plt.xlabel('Yıl')
+plt.ylabel('Ortalama CPI (TÜFE)')
 plt.show()
+
 
